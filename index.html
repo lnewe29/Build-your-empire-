@@ -1,325 +1,627 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Build Your Empire</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
+:root{--bg:#08131f;--panel:#101e2d;--gold:#e8bd62;--line:#425365;--text:#f3f6f8;--muted:#b7c4d1}
 *{box-sizing:border-box}
-body{margin:0;background:#101722;color:#edf2f7;font:15px Arial}
-header{padding:18px;background:#182638;border-bottom:2px solid #d4ae62}
-h1{margin:0;color:#f2d28a;font-family:Georgia,serif}
-header p{color:#aab8c9;margin-bottom:0}
-.stats{display:flex;flex-wrap:wrap;gap:8px;padding:12px}
-.stat,.panel{background:#1a293a;border:1px solid #34485e;border-radius:10px;padding:12px}
-.stat{flex:1;min-width:90px}
-.stat small{display:block;color:#aab8c9}
-.stat strong{display:block;font-size:20px;color:#f2d28a;margin-top:5px}
-main{max-width:1100px;margin:auto;padding:12px}
-h2{font-size:18px;color:#f2d28a;margin-top:0}
-button{background:#293e54;color:white;border:1px solid #526b82;border-radius:8px;padding:11px;margin:3px;cursor:pointer}
-button:active{background:#8b6c36}
-.actions{display:flex;flex-wrap:wrap;gap:4px}
-.actions button{flex:1;min-width:130px}
-#map{height:390px;position:relative;overflow:hidden;border:2px solid #60756b;border-radius:12px;background:#647e55;touch-action:pan-y}
-#land{position:absolute;inset:-10%;transform-origin:center;transition:transform .25s;background:
-radial-gradient(ellipse at 20% 20%,#b0ad72 0 5%,transparent 6%),
-radial-gradient(ellipse at 70% 30%,#b2ad70 0 12%,transparent 13%),
-radial-gradient(ellipse at 45% 80%,#9aa76a 0 20%,transparent 21%),
-linear-gradient(135deg,#45634d,#829461 45%,#526e50)}
-.river{position:absolute;width:130%;height:25px;left:-10%;top:55%;transform:rotate(-24deg);background:#478ba8;border:2px solid #a6cbd1}
-.place{position:absolute;transform:translate(-50%,-50%);background:#172638ee;border:1px solid #e2c37b;color:#fff;border-radius:8px;padding:8px;text-align:center;cursor:pointer;font-size:12px;white-space:nowrap}
-.place b{display:block;font-size:22px}
-.place.selected{outline:3px solid #ffe3a0}
-#maplabel{position:absolute;top:10px;left:10px;padding:9px;background:#172638eF;border-radius:7px;font-size:12px}
-.note{font-size:12px;line-height:1.6;color:#aab8c9}
-#details{line-height:1.8}
-.log{padding:9px 0;border-bottom:1px solid #34485e;font-size:13px;line-height:1.5}
-footer{text-align:center;color:#8295aa;font-size:12px;padding:20px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif}
+button{cursor:pointer;font:inherit}
+#map{position:fixed;inset:0;background:#172c3a}
+.leaflet-control-attribution{font-size:9px!important}
+#top{position:fixed;z-index:500;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:6px;pointer-events:none}
+.brand,.stats,.action,.panel{background:#091522ed;border:1px solid var(--line);border-radius:12px;box-shadow:0 5px 20px #0005}
+.brand,.stats{padding:9px 11px;pointer-events:auto}
+.brand{font-weight:900;letter-spacing:.5px}
+.brand small{display:block;color:var(--gold);font-size:10px;font-weight:600;margin-top:3px}
+.stats{font-size:11px;line-height:1.8}
+.stats b{color:var(--gold)}
+#zoom{position:fixed;z-index:500;top:105px;left:8px;display:grid;gap:5px}
+.action{color:white;padding:9px 11px;font-size:12px;font-weight:700}
+.action:active{transform:scale(.97)}
+.gold{background:var(--gold);color:#17212b;border-color:#ffe4a0}
+#bottom{position:fixed;z-index:500;bottom:calc(8px + env(safe-area-inset-bottom));left:8px;right:8px;display:flex;justify-content:center;flex-wrap:wrap;gap:5px}
+#hint{position:fixed;z-index:450;top:75px;left:50%;transform:translateX(-50%);background:#091522df;border-radius:20px;padding:7px 12px;font-size:10px;white-space:nowrap}
+.panel{position:fixed;z-index:800;top:90px;right:8px;bottom:75px;width:min(360px,calc(100vw - 16px));display:none;flex-direction:column;overflow:hidden;background:#091522f5}
+.panel.open{display:flex}
+.phead{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--line)}
+.phead h2{font-size:19px;margin:0}
+.close{background:#243547;color:white;border:0;border-radius:8px;padding:5px 11px;font-size:20px}
+.content{padding:12px;overflow:auto}
+.section{margin-bottom:15px}
+.section h3{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.stat{background:#ffffff09;border:1px solid #ffffff18;border-radius:9px;padding:9px}
+.stat small{display:block;color:var(--muted);font-size:10px}
+.stat b{font-size:15px}
+.item{padding:10px 0;border-bottom:1px solid #ffffff1a;font-size:13px}
+.item small{display:block;color:var(--muted);margin-top:4px}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.mini{background:#1c3042;color:white;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px}
+.mini.gold{background:var(--gold);color:#17212b}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+.buildgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.buildcard{background:#17283a;color:white;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:left}
+.buildcard b,.buildcard small{display:block;margin-top:5px}
+.buildcard small{color:var(--muted);font-size:10px}
+.buildcard em{display:block;color:var(--gold);font-size:10px;margin-top:7px;font-style:normal}
+#toast{display:none;position:fixed;z-index:1000;bottom:80px;left:50%;transform:translateX(-50%);background:#091522;border:1px solid var(--gold);border-radius:10px;padding:11px;max-width:90%;font-size:12px;text-align:center}
+#toast.show{display:block}
+#tutorial{position:fixed;inset:0;z-index:3000;background:radial-gradient(ellipse at top,#233d52,#08131f 75%);display:flex;align-items:center;justify-content:center;padding:16px}
+.tcard{width:min(540px,100%);max-height:94dvh;overflow:auto;background:#0d1b2a;border:1px solid #78663f;border-radius:22px;padding:clamp(20px,5vw,34px);box-shadow:0 20px 70px #0009}
+.tbrand{font-size:11px;letter-spacing:2px;color:var(--gold);font-weight:900}
+#pageCount{float:right;color:var(--muted);letter-spacing:0}
+#symbol{text-align:center;font-size:54px;margin:24px 0 12px}
+#tTitle{font-size:clamp(26px,6vw,36px);line-height:1.1;margin:0 0 12px}
+#tText{font-size:14px;line-height:1.6;color:#d5e0e8}
+#tList{font-size:13px;line-height:1.8;padding-left:20px}
+#tTip{padding:12px;background:#e8bd6215;border:1px solid #e8bd6244;border-radius:10px;color:#f2dba5;font-size:12px;line-height:1.5}
+.progress{height:4px;background:#ffffff1a;border-radius:5px;margin:20px 0;overflow:hidden}
+#progressBar{height:100%;width:12.5%;background:var(--gold)}
+.tbuttons{display:flex;gap:7px}
+.tbuttons button{padding:12px;border:1px solid var(--line);border-radius:10px;background:#1b3042;color:white;font-weight:750;font-size:12px}
+#nextPage{background:var(--gold);color:#15202a;flex:1}
+#skipPage{background:transparent}
+@media(max-width:450px){.brand{font-size:12px;padding:8px}.stats{font-size:10px;padding:7px}.action{padding:8px;font-size:11px}#bottom{gap:4px}.panel{top:105px}}
 </style>
 </head>
 <body>
-<header>
-<h1>♛ Build Your Empire</h1>
-<p>One decision can change history.</p>
-</header>
-<div class="stats">
-<div class="stat"><small>Year</small><strong id="year">10,000 BCE</strong></div>
-<div class="stat"><small>Population</small><strong id="pop">500</strong></div>
-<div class="stat"><small>Food</small><strong id="food">500</strong></div>
-<div class="stat"><small>Wood</small><strong id="wood">120</strong></div>
-<div class="stat"><small>Stone</small><strong id="stone">40</strong></div>
-<div class="stat"><small>Knowledge</small><strong id="knowledge">0</strong></div>
+
+<div id="map"></div>
+<div id="top">
+ <div class="brand">BUILD YOUR EMPIRE<small id="eraLabel">STONE AGE · YEAR 1</small></div>
+ <div class="stats">👥 <b id="pop">1,000</b><br>🌾 <b id="food">160</b> · 🪵 <b id="wood">120</b><br>🪨 <b id="stone">60</b> · 🪙 <b id="coins">40</b></div>
 </div>
-<main>
-<div class="panel">
-<h2>World map</h2>
-<div class="actions">
-<button onclick="zoomOut()">− Zoom out</button>
-<button onclick="zoomIn()">+ Zoom in</button>
-<button onclick="worldView()">World view</button>
-<button onclick="advance()">⏳ Advance time</button>
+<div id="hint">WORLD VIEW · Drag to explore · Pinch to zoom</div>
+<div id="zoom">
+ <button class="action" onclick="setZoom(1)">🌍 World · 1</button>
+ <button class="action" onclick="setZoom(2)">🗺️ Region · 2</button>
+ <button class="action" onclick="setZoom(3)">🏠 Empire · 3</button>
 </div>
-<p class="note" id="level">Level 1 · World map</p>
-<div id="map">
-<div id="land"></div><div class="river"></div>
-<div id="maplabel">THE KNOWN WORLD</div>
+<div id="bottom">
+ <button class="action gold" onclick="buildMenu()">🏗️ Build</button>
+ <button class="action" onclick="researchMenu()">📚 Research</button>
+ <button class="action" onclick="diplomacyMenu()">🤝 Diplomacy</button>
+ <button class="action" onclick="warMenu()">⚔️ Military</button>
+ <button class="action" onclick="historyMenu()">📜 History</button>
+ <button class="action" onclick="showTutorial()">❔ Guide</button>
+ <button class="action" onclick="worldMenu()">🌐 World</button>
 </div>
-<p class="note">Tap a location to inspect it. Double-tap a location at Level 2 for details. Level 3 is available only in your empire.</p>
+<div id="panel" class="panel">
+ <div class="phead"><div><h2 id="pTitle">Details</h2><small id="pSub"></small></div><button class="close" onclick="closePanel()">×</button></div>
+ <div class="content" id="pContent"></div>
+</div>
+<div id="toast"></div>
+
+<div id="tutorial">
+ <div class="tcard">
+  <div class="tbrand">BUILD YOUR EMPIRE <span id="pageCount">1 / 8</span></div>
+  <div id="symbol">🌍</div>
+  <h1 id="tTitle">Your story starts here</h1>
+  <div id="tText">Build a civilization and shape an alternate history.</div>
+  <ul id="tList"></ul>
+  <div id="tTip">The simulation pauses during this guide.</div>
+  <div class="progress"><div id="progressBar"></div></div>
+  <div class="tbuttons">
+   <button id="backPage" onclick="flip(-1)" disabled>← Back</button>
+   <button id="nextPage" onclick="flip(1)">Next →</button>
+   <button id="skipPage" onclick="startGame()">Skip</button>
+  </div>
+ </div>
 </div>
 
-<div class="panel" style="margin-top:12px">
-<h2 id="placeTitle">Your civilization</h2>
-<div id="details">Select a location on the map.</div>
-<div class="actions" id="placeActions"></div>
-</div>
-
-<div class="panel" style="margin-top:12px">
-<h2>Construction</h2>
-<p class="note">Choose what to build. You must pay the resources, and your choices affect your people and your settlement.</p>
-<div class="actions" id="buildButtons"></div>
-</div>
-
-<div class="panel" style="margin-top:12px">
-<h2>Your civilization's history</h2>
-<div id="history"></div>
-</div>
-</main>
-<footer>BUILD YOUR EMPIRE · Your choices shape history</footer>
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const defaults={
-year:-10000,pop:500,food:500,wood:120,stone:40,
-knowledge:0,level:1,buildings:[],workers:100,
-selected:"Home",lastTime:Date.now()
-};
-let game;
-try{
-game=Object.assign({},defaults,JSON.parse(localStorage.getItem("empireSave")||"{}"));
-}catch(e){game={...defaults}}
-let places=[
-{name:"Home",icon:"🏕️",x:49,y:48,kind:"Your settlement",own:true,pop:500},
-{name:"River Valley",icon:"🌊",x:62,y:67,kind:"Water and fertile land",own:true},
-{name:"Northern Forest",icon:"🌲",x:27,y:25,kind:"Forest",own:false},
-{name:"Stone Hills",icon:"⛰️",x:76,y:28,kind:"Rocky hills",own:false},
-{name:"Eastern Tribe",icon:"🏘️",x:81,y:68,kind:"Independent settlement",own:false}
+'use strict';
+
+/* BUILD YOUR EMPIRE — single-file game */
+
+const SAVE='buildEmpireSave_v8';
+const YEARS_PER_TICK=1;
+const SECONDS_PER_YEAR=144;
+const eras=[
+ ['Stone Age',1],['Neolithic Age',8],['Bronze Age',35],
+ ['Iron Age',60],['Classical Age',90],['Medieval Age',125],
+ ['Renaissance',160],['Industrial Age',190],
+ ['Modern Age',220],['Digital Age',250],['Space Age',300]
 ];
-let logs=["Your people establish their first settlement in the Stone Age."];
-let selectedPlace=places[0];
-let level=1;
-let built=[];
+
+const pages=[
+ {icon:'🌍',title:'Your story starts here',text:'Build a civilization from the Stone Age into the distant future. Every timeline can unfold differently.',list:['Start with exactly 1,000 people.','Build settlements and gather resources.','Survive, expand and shape history.'],tip:'Your choices matter. A civilization can rise, decline or disappear.'},
+ {icon:'🗺️',title:'Explore the world',text:'The map is your main screen. Drag to explore, and use two fingers to pinch in and out on your iPad.',list:['Tap a civilization marker to inspect it.','Zoom out to see the wider world.','Zoom in to inspect places more closely.'],tip:'The map uses OpenStreetMap tiles, so an internet connection is needed to load the map.'},
+ {icon:'🔎',title:'Three zoom levels',text:'The game has exactly three gameplay zoom levels.',list:['Level 1 — World: inspect civilizations and plan your strategy.','Level 2 — Region: inspect cities, terrain and resources.','Level 3 — Your Empire: inspect your own settlements and buildings.'],tip:'Level 3 is restricted to your empire. There is no fourth level.'},
+ {icon:'🏗️',title:'Build your settlement',text:'Choose what to build and then tap a location on the map.',list:['Huts provide housing.','Farms produce food.','Mines gather stone and may discover metals.','Schools, workshops, markets and hospitals provide other benefits.'],tip:'Buildings cost resources. Check the cost before choosing a structure.'},
+ {icon:'📚',title:'Discover new knowledge',text:'Knowledge unlocks new technologies and helps your civilization change over time.',list:['Research agriculture and toolmaking.','Develop medicine, writing and metallurgy.','Improve engineering as your society advances.'],tip:'Historical progress is gradual. Research and resources affect your development.'},
+ {icon:'🤝',title:'Other civilizations',text:'The world is home to independent societies with their own resources, populations and armies.',list:['Trade and negotiate.','Seek alliances.','Inspect troop numbers and equipment before war.'],tip:'Battles are uncertain. The game will not tell you a victory percentage or guaranteed winner.'},
+ {icon:'⏳',title:'Time keeps moving',text:'Game time advances automatically. There is no button to advance one year.',list:['Two real hours equal 50 in-game years.','One game year lasts 144 seconds.','When you return after being away, elapsed time can be simulated.'],tip:'Leaving the game unattended can be risky. Food shortages, disease, conflicts and other events may occur.'},
+ {icon:'📜',title:'Your history',text:'Events are recorded as your civilization changes.',list:['Review the history log.','Watch population and resources.','If your empire collapses, begin a new Stone Age timeline.'],tip:'This is an evolving strategy game. Some deeper historical and population systems remain simplified.'}
+];
+
+let page=0,started=false,map=null,markers=[],placing=null,selected=0,timer=null,lastSaved=Date.now(),lastTick=Date.now();
+let state;
+
+const seeds=[
+ {name:'Your People',lat:32.5,lng:44.4,own:true},
+ {name:'Nile Kingdoms',lat:26.8,lng:30.8},
+ {name:'Indus Settlements',lat:27.2,lng:68.5},
+ {name:'Yellow River Clans',lat:35.5,lng:109.5},
+ {name:'Anatolian League',lat:39,lng:35},
+ {name:'Aegean Cities',lat:38,lng:23},
+ {name:'Sahel Communities',lat:13,lng:2},
+ {name:'Andean Settlements',lat:-12,lng:-75},
+ {name:'Mesoamerican Cities',lat:17,lng:-96}
+];
+
+const defs=[
+ {name:'Hut',icon:'🛖',wood:12,stone:0,coins:0,workers:4,desc:'Provides housing.'},
+ {name:'Farm',icon:'🌾',wood:18,stone:3,coins:0,workers:12,desc:'Produces food.'},
+ {name:'Mine',icon:'⛏️',wood:20,stone:12,coins:0,workers:10,desc:'Produces stone and may uncover metal.'},
+ {name:'School',icon:'📚',wood:25,stone:12,coins:8,workers:8,desc:'Produces knowledge.'},
+ {name:'Workshop',icon:'🛠️',wood:20,stone:10,coins:5,workers:10,desc:'Improves production.'},
+ {name:'Hospital',icon:'🏥',wood:30,stone:22,coins:15,workers:12,desc:'Reduces disease losses.'},
+ {name:'Barracks',icon:'🛡️',wood:28,stone:20,coins:10,workers:16,desc:'Trains troops.'},
+ {name:'Market',icon:'🪙',wood:20,stone:8,coins:5,workers:8,desc:'Produces trade income.'},
+ {name:'Temple',icon:'🕯️',wood:20,stone:18,coins:0,workers:6,desc:'Supports community morale.'},
+ {name:'Outpost',icon:'🚩',wood:25,stone:15,coins:3,workers:8,desc:'Extends your reach.'}
+];
+
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.floor(Number(n)||0).toLocaleString();
+const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const own=()=>state.civs.find(c=>c.own)||state.civs[0];
+const era=()=>{let out=eras[0][0];for(const e of eras)if(state.year>=e[1])out=e[0];return out};
+
+function newCiv(seed,i){
+ return {...seed,id:i,people:1000,food:160,wood:120,stone:60,metal:0,coins:40,
+  knowledge:0,health:85,happiness:70,army:30,tech:0,territory:1,
+  buildings:[],relations:{},techs:[],families:Math.floor(1000/4.7),
+  births:0,deaths:0,yearFounded:1,independence:true};
+}
+
+function newState(){
+ return {year:1,lastSimAt:Date.now(),gameOver:false,archives:[],
+  civs:seeds.map(newCiv),
+  history:[{year:1,text:'The first timeline begins. Every civilization starts with 1,000 people.'}]};
+}
+
+function load(){
+ try{
+  const s=JSON.parse(localStorage.getItem(SAVE));
+  if(s&&Array.isArray(s.civs)&&s.civs.length){
+   state=s;
+   state.archives=state.archives||[];
+   state.history=state.history||[];
+   state.civs.forEach((c,i)=>{
+    c.id=i;c.buildings=c.buildings||[];c.relations=c.relations||{};
+    c.techs=c.techs||[];c.knowledge=c.knowledge||0;
+    c.families=c.families||Math.floor(c.people/4.7);
+   });
+   state.lastSimAt=state.lastSimAt||Date.now();
+  }else state=newState();
+ }catch(e){state=newState()}
+}
 
 function save(){
-game.lastTime=Date.now();
-localStorage.setItem("empireSave",JSON.stringify(game));
+ state.lastSimAt=Date.now();
+ try{localStorage.setItem(SAVE,JSON.stringify(state))}catch(e){}
 }
-function fmt(n){return Math.floor(n).toLocaleString("en-AU")}
-function yearName(y){return y<0?fmt(-y)+" BCE":y===0?"1 CE":fmt(y)+" CE"}
-function era(){
-if(game.year < -3000)return "Stone Age";
-if(game.year < -1200)return "Bronze Age";
-if(game.year < 500)return "Iron Age and Classical Era";
-if(game.year < 1500)return "Middle Ages";
-if(game.year < 1800)return "Early Modern Era";
-if(game.year < 1950)return "Industrial and Modern Era";
-if(game.year < 2100)return "Digital Age";
-return "Future Era";
+
+function log(text){
+ state.history.unshift({year:state.year,text});
+ state.history=state.history.slice(0,500);
 }
-function log(msg){
-logs.unshift(yearName(game.year)+": "+msg);
-logs=logs.slice(0,25);
-document.getElementById("history").innerHTML=logs.map(x=>'<div class="log">'+x+'</div>').join("");
+
+function toast(text){
+ const t=$('toast');t.textContent=text;t.classList.add('show');
+ clearTimeout(t._timer);t._timer=setTimeout(()=>t.classList.remove('show'),2600);
 }
+
+function flip(dir){
+ page=clamp(page+dir,0,pages.length-1);
+ renderPage();
+}
+
+function renderPage(){
+ const p=pages[page];
+ $('symbol').textContent=p.icon;
+ $('tTitle').textContent=p.title;
+ $('tText').textContent=p.text;
+ $('tList').innerHTML=p.list.map(x=>'<li>'+x+'</li>').join('');
+ $('tTip').textContent=p.tip;
+ $('pageCount').textContent=(page+1)+' / '+pages.length;
+ $('progressBar').style.width=((page+1)/pages.length*100)+'%';
+ $('backPage').disabled=page===0;
+ $('nextPage').textContent=page===pages.length-1?'Begin Game ✓':'Next →';
+}
+
+function showTutorial(){
+ page=0;renderPage();$('tutorial').style.display='flex';
+ if(timer){clearInterval(timer);timer=null}
+}
+
+function startGame(){
+ $('tutorial').style.display='none';
+ started=true;
+ if(!map)initMap();
+ if(!timer)timer=setInterval(()=>{if(started&&document.visibilityState==='visible')tick();},1000);
+ const away=Math.floor((Date.now()-(state.lastSimAt||Date.now()))/1000/SECONDS_PER_YEAR);
+ if(away>0)simulateMany(Math.min(away,5000),true);
+ lastTick=Date.now();save();update();drawMarkers();
+}
+
+function initMap(){
+ map=L.map('map',{zoomControl:false,minZoom:2,maxZoom:9,worldCopyJump:true}).setView([27,42],3);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'&copy; OpenStreetMap contributors',maxZoom:19
+ }).addTo(map);
+ map.on('zoomend',()=>{
+  const z=map.getZoom();
+  $('hint').textContent=z<=4?'LEVEL 1 · WORLD VIEW':z<=7?'LEVEL 2 · REGIONAL VIEW':'LEVEL 3 · YOUR EMPIRE';
+  if(z>7){
+   const c=own(),p=map.getCenter();
+   if(Math.abs(p.lat-c.lat)>20||Math.abs(p.lng-c.lng)>25){
+    map.setView([c.lat,c.lng],7);
+    toast('Level 3 is only available inside your empire.');
+   }
+  }
+ });
+ map.on('click',e=>{if(placing)placeBuilding(e.latlng)});
+ drawMarkers();
+}
+
+function setZoom(level){
+ if(!map)return;
+ const c=own();
+ if(level===1)map.setView([20,0],2);
+ if(level===2)map.setView([c.lat,c.lng],5);
+ if(level===3)map.setView([c.lat,c.lng],8);
+}
+
+function drawMarkers(){
+ if(!map)return;
+ markers.forEach(m=>map.removeLayer(m));markers=[];
+ state.civs.forEach((c,i)=>{
+  const color=c.own?'#e8bd62':'#e56f68';
+  const icon=L.divIcon({className:'',html:'<div style="width:15px;height:15px;background:'+color+';border:2px solid white;border-radius:50%;box-shadow:0 0 0 4px #e8bd6244"></div>',iconSize:[20,20],iconAnchor:[10,10]});
+  const m=L.marker([c.lat,c.lng],{icon}).addTo(map);
+  m.bindTooltip(c.name);m.on('click',()=>inspect(i));markers.push(m);
+ });
+}
+
 function update(){
-["year","pop","food","wood","stone","knowledge"].forEach(k=>{
-document.getElementById(k).textContent=k==="year"?yearName(game.year):fmt(game[k]);
+ const c=own();
+ $('pop').textContent=fmt(c.people);
+ $('food').textContent=fmt(c.food);
+ $('wood').textContent=fmt(c.wood);
+ $('stone').textContent=fmt(c.stone);
+ $('coins').textContent=fmt(c.coins);
+ $('eraLabel').textContent=era().toUpperCase()+' · YEAR '+fmt(state.year);
+}
+
+function openPanel(title,sub,html){
+ $('pTitle').textContent=title;$('pSub').textContent=sub||'';
+ $('pContent').innerHTML=html;$('panel').classList.add('open');
+}
+
+function closePanel(){$('panel').classList.remove('open')}
+
+function inspect(i){
+ selected=i;const c=state.civs[i],isOwn=!!c.own;
+ const buildings=c.buildings.map(b=>'<div class="item">'+b.icon+' <b>'+b.name+'</b><small>Level '+b.level+' · Workers '+b.workers+'</small></div>').join('')||'<p class="note">No buildings placed.</p>';
+ let html='<div class="grid">'+[
+  ['Population',fmt(c.people)],['Food',fmt(c.food)],['Health',c.health+'%'],
+  ['Happiness',c.happiness+'%'],['Wood',fmt(c.wood)],['Stone',fmt(c.stone)],
+  ['Metal',fmt(c.metal)],['Coins',fmt(c.coins)],['Knowledge',fmt(c.knowledge)],['Army',fmt(c.army)]
+ ].map(a=>'<div class="stat"><small>'+a[0]+'</small><b>'+a[1]+'</b></div>').join('')+'</div>';
+ html+='<div class="section"><h3>Society</h3><p class="note">Estimated families: '+fmt(c.families)+'. Births recorded: '+fmt(c.births)+'. Deaths recorded: '+fmt(c.deaths)+'.</p></div>';
+ html+='<div class="section"><h3>Buildings</h3>'+buildings+'</div>';
+ if(isOwn)html+='<div class="row"><button class="mini gold" onclick="buildMenu()">Build</button><button class="mini" onclick="researchMenu()">Research</button></div>';
+ else html+='<div class="row"><button class="mini" onclick="tradeWith('+i+')">Offer trade</button><button class="mini" onclick="allianceWith('+i+')">Seek alliance</button><button class="mini" onclick="inspectMilitary('+i+')">Military intelligence</button><button class="mini" onclick="warWith('+i+')">Start campaign</button></div>';
+ openPanel(c.name,isOwn?'Your civilization':'Independent civilization',html);
+}
+
+function buildMenu(){
+ const c=own();
+ let html='<p class="note">Choose a building, then tap its location on the map. Costs are shown below. Buildings are not placed automatically.</p><div class="buildgrid">';
+ defs.forEach((b,i)=>{
+  html+='<button class="buildcard" onclick="chooseBuild('+i+')">'+b.icon+'<b>'+b.name+'</b><small>'+b.desc+'</small><em>🪵 '+b.wood+' · 🪨 '+b.stone+' · 🪙 '+b.coins+'</em></button>';
+ });
+ html+='</div>';
+ openPanel('Build','Choose a structure',html);
+}
+
+function chooseBuild(i){
+ const b=defs[i],c=own();
+ if(c.wood<b.wood||c.stone<b.stone||c.coins<b.coins){toast('Not enough resources.');return}
+ placing=b;closePanel();toast('Tap the map where you want to place '+b.name+'.');
+}
+
+function placeBuilding(p){
+ const b=placing,c=own();if(!b)return;
+ placing=null;
+ if(c.wood<b.wood||c.stone<b.stone||c.coins<b.coins){toast('Not enough resources.');return}
+ c.wood-=b.wood;c.stone-=b.stone;c.coins-=b.coins;
+ c.buildings.push({name:b.name,icon:b.icon,lat:p.lat,lng:p.lng,level:1,workers:b.workers});
+ if(b.name==='Barracks')c.army+=12;
+ if(b.name==='Hut')c.territory++;
+ log('A '+b.name+' was constructed at '+p.lat.toFixed(2)+', '+p.lng.toFixed(2)+'.');
+ save();update();toast(b.name+' placed.');inspect(0);
+}
+
+function researchMenu(){
+ const c=own();
+ const techs=[
+  ['Agriculture',30,'Improve food production.'],
+  ['Toolmaking',40,'Improve gathering.'],
+  ['Medicine',60,'Reduce disease losses.'],
+  ['Writing',80,'Preserve knowledge.'],
+  ['Metallurgy',110,'Improve tools and equipment.'],
+  ['Engineering',160,'Improve construction.'],
+  ['Navigation',200,'Expand trade and exploration.'],
+  ['Electricity',350,'Begin industrial development.']
+ ];
+ let html='<p class="note">Spend knowledge to unlock technologies. Research is recorded in your civilization history.</p>';
+ techs.forEach((t,i)=>{
+  const done=c.techs.includes(t[0]);
+  html+='<div class="item"><b>'+t[0]+'</b><small>'+t[2]+'</small><div class="row"><button class="mini '+(done?'':'gold')+'" '+(done?'disabled':'')+' onclick="research('+i+')">'+(done?'Researched':t[1]+' knowledge')+'</button></div></div>';
+ });
+ openPanel('Research','Knowledge: '+fmt(c.knowledge),html);
+}
+
+function research(i){
+ const techs=[['Agriculture',30],['Toolmaking',40],['Medicine',60],['Writing',80],['Metallurgy',110],['Engineering',160],['Navigation',200],['Electricity',350]];
+ const t=techs[i],c=own();
+ if(!t||c.techs.includes(t[0]))return;
+ if(c.knowledge<t[1]){toast('You need more knowledge.');return}
+ c.knowledge-=t[1];c.techs.push(t[0]);c.tech++;
+ log('Your civilization developed '+t[0]+'.');
+ save();update();researchMenu();
+}
+
+function diplomacyMenu(){
+ let html='<p class="note">Choose another civilization to inspect its resources, negotiate trade or seek an alliance.</p>';
+ state.civs.forEach((c,i)=>{if(!c.own)html+='<div class="item"><b>'+c.name+'</b><small>Population '+fmt(c.people)+' · Army '+fmt(c.army)+'</small><div class="row"><button class="mini" onclick="inspect('+i+')">Inspect</button><button class="mini" onclick="tradeWith('+i+')">Trade</button><button class="mini" onclick="allianceWith('+i+')">Alliance</button></div></div>'});
+ openPanel('Diplomacy','Independent civilizations',html);
+}
+
+function tradeWith(i){
+ const a=own(),b=state.civs[i];
+ if(!b||b.own)return;
+ if(a.food<20||b.food<10){toast('One civilization lacks enough food to trade.');return}
+ a.food-=20;b.food-=10;a.coins+=12;b.coins+=8;
+ log('A trade agreement exchanged food and coins with '+b.name+'.');
+ save();update();toast('Trade completed.');inspect(i);
+}
+
+function allianceWith(i){
+ const b=state.civs[i];if(!b||b.own)return;
+ const rel=b.relations[0]||0;
+ b.relations[0]=rel+1;own().happiness=clamp(own().happiness+2,0,100);
+ log('Diplomats sought closer relations with '+b.name+'.');
+ save();toast('Relations improved.');inspect(i);
+}
+
+function inspectMilitary(i){
+ const b=state.civs[i];if(!b)return;
+ openPanel('Military intelligence',b.name,
+ '<div class="grid"><div class="stat"><small>Known troops</small><b>'+fmt(b.army)+'</b></div><div class="stat"><small>Population</small><b>'+fmt(b.people)+'</b></div><div class="stat"><small>Metal</small><b>'+fmt(b.metal)+'</b></div><div class="stat"><small>Fortifications</small><b>'+b.buildings.filter(x=>x.name==='Barracks').length+'</b></div></div><p class="note">Intelligence can be incomplete. Terrain, equipment, supply, leadership and unexpected events can change a battle. No victory percentage or predicted winner is provided.</p>');
+}
+
+function warMenu(){diplomacyMenu()}
+
+function warWith(i){
+ const a=own(),b=state.civs[i];if(!b||b.own)return;
+ openPanel('Military campaign',b.name,
+ '<p class="note">Before starting a campaign, inspect the known troop numbers and available resources. Battles are uncertain: there is no victory probability or guaranteed winner.</p><div class="grid"><div class="stat"><small>Your troops</small><b>'+fmt(a.army)+'</b></div><div class="stat"><small>Known enemy troops</small><b>'+fmt(b.army)+'</b></div><div class="stat"><small>Your food</small><b>'+fmt(a.food)+'</b></div><div class="stat"><small>Your metal</small><b>'+fmt(a.metal)+'</b></div></div><div class="row"><button class="mini gold" onclick="launchWar('+i+')">Launch campaign</button><button class="mini" onclick="inspectMilitary('+i+')">More intelligence</button></div>');
+}
+
+function launchWar(i){
+ const a=own(),b=state.civs[i];
+ if(!b||b.own)return;
+ if(a.army<1||a.food<10){toast('You need troops and food supplies.');return}
+ a.food-=10;
+ const atk=a.army,def=b.army;
+ const terrain=rand(0,25),equipment=rand(0,25),supply=rand(0,20);
+ const attackScore=atk+equipment+supply+rand(-Math.max(1,Math.floor(atk*.3)),Math.max(1,Math.floor(atk*.3)));
+ const defendScore=def+terrain+rand(-Math.max(1,Math.floor(def*.3)),Math.max(1,Math.floor(def*.3)));
+ a.army=Math.max(0,Math.floor(atk*(attackScore>=defendScore?.72:.48)));
+ b.army=Math.max(0,Math.floor(def*(attackScore>=defendScore?.35:.72)));
+ if(attackScore>=defendScore){
+  const plunder=Math.min(b.food,30);a.food+=plunder;b.food-=plunder;
+  b.happiness=clamp(b.happiness-12,0,100);
+  log('Your campaign against '+b.name+' succeeded. The outcome was shaped by troops, equipment, supply, terrain and chance.');
+  toast('Campaign succeeded, but losses were suffered.');
+ }else{
+  a.happiness=clamp(a.happiness-12,0,100);
+  log('Your campaign against '+b.name+' failed. Terrain, supply, equipment and chance changed the outcome.');
+  toast('Campaign failed. Your army suffered losses.');
+ }
+ if(b.army===0&&attackScore>=defendScore){
+  b.people=Math.max(100,Math.floor(b.people*.75));
+  b.coins=Math.max(0,b.coins-20);
+  log(b.name+' lost territory and resources after the campaign.');
+ }
+ save();update();inspect(i);
+}
+
+function historyMenu(){
+ let html='<p class="note">Recorded events from the current timeline.</p>';
+ html+=state.history.slice(0,100).map(h=>'<div class="item"><b>Year '+fmt(h.year)+'</b><small>'+escapeHtml(h.text)+'</small></div>').join('');
+ html+='<div class="row"><button class="mini" onclick="exportSave()">Export save</button><button class="mini" onclick="restartTimeline()">Restart timeline</button></div>';
+ openPanel('History','Year '+fmt(state.year),html);
+}
+
+function escapeHtml(s){
+ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function exportSave(){
+ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='build-your-empire-save.json';a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function worldMenu(){
+ const civs=[...state.civs].sort((a,b)=>b.people-a.people);
+ openPanel('World overview','Year '+fmt(state.year),
+ '<p class="note">Independent civilizations develop alongside your society.</p>'+
+ '<div class="grid"><div class="stat"><small>Known civilizations</small><b>'+state.civs.length+'</b></div><div class="stat"><small>Total population</small><b>'+fmt(state.civs.reduce((s,c)=>s+c.people,0))+'</b></div></div>'+
+ civs.map(c=>'<div class="item"><b>'+escapeHtml(c.name)+'</b><small>Population '+fmt(c.people)+' · '+escapeHtml(c.own?'Your empire':'Independent')+'</small><button class="mini" onclick="inspect('+c.id+')">Inspect</button></div>').join(''));
+}
+
+function simulateYear(silent=false){
+ if(state.gameOver)return;
+ state.year++;
+ for(const c of state.civs){
+  if(c.people<=0)continue;
+  const farms=c.buildings.filter(b=>b.name==='Farm').length;
+  const huts=c.buildings.filter(b=>b.name==='Hut').length;
+  const mines=c.buildings.filter(b=>b.name==='Mine').length;
+  const schools=c.buildings.filter(b=>b.name==='School').length;
+  const markets=c.buildings.filter(b=>b.name==='Market').length;
+  const hospitals=c.buildings.filter(b=>b.name==='Hospital').length;
+  const temples=c.buildings.filter(b=>b.name==='Temple').length;
+  const barracks=c.buildings.filter(b=>b.name==='Barracks').length;
+  const workshops=c.buildings.filter(b=>b.name==='Workshop').length;
+  const foodMade=farms*(18+c.tech*2)+rand(0,5);
+  const foodUsed=Math.ceil(c.people*.12);
+  c.food=clamp(c.food+foodMade-foodUsed,0,999999999);
+  c.wood=clamp(c.wood+rand(4,10)+workshops*3,0,999999);
+  c.stone=clamp(c.stone+mines*8+rand(0,3),0,999999);
+  c.coins=clamp(c.coins+markets*5+rand(0,2),0,999999);
+  c.knowledge=clamp(c.knowledge+schools*5+Math.max(1,Math.floor(c.people/500)),0,999999);
+  c.metal=clamp(c.metal+mines*(c.tech>=3?2:0),0,999999);
+  let growth=rand(5,20)+huts*3;
+  if(c.food===0)growth-=rand(20,45);
+  if(c.food<foodUsed)growth-=rand(10,25);
+  if(c.health<40)growth-=rand(5,20);
+  if(c.happiness<25)growth-=rand(3,12);
+  if(c.people<10000)growth=Math.min(growth,Math.ceil(c.people*.025));
+  c.people=Math.max(0,c.people+growth);
+  c.births+=Math.max(0,growth);
+  c.deaths+=Math.max(0,-growth);
+  c.families=Math.max(0,Math.floor(c.people/4.7));
+  c.health=clamp(c.health+(hospitals?2:0)+(c.food>foodUsed?1:0)-(c.food===0?rand(3,8):0)-(Math.random()<.012?rand(5,15):0),0,100);
+  c.happiness=clamp(c.happiness+(temples?1:0)+(c.food>foodUsed?1:0)-(c.food===0?rand(3,7):0),0,100);
+  if(c.own&&c.buildings.some(b=>b.name==='Barracks'))c.army+=Math.floor(barracks/2);
+  if(!c.own&&Math.random()<.15){
+   const options=['Farm','Hut','Mine','Market'];
+   const n=options[rand(0,options.length-1)];
+   c.buildings.push({name:n,icon:({Farm:'🌾',Hut:'🛖',Mine:'⛏️',Market:'🪙'})[n],level:1,workers:8,lat:c.lat+rand(-2,2),lng:c.lng+rand(-2,2)});
+  }
+  if(!c.own&&Math.random()<.08)c.tech++;
+  if(Math.random()<.008){
+   const events=[
+    ()=>{c.food+=40;return c.name+' enjoyed a good harvest.'},
+    ()=>{c.food=Math.max(0,c.food-30);return c.name+' suffered a poor harvest.'},
+    ()=>{c.health=clamp(c.health-rand(5,18),0,100);return 'Disease spread in '+c.name+'.'},
+    ()=>{c.knowledge+=rand(5,20);return c.name+' made a new discovery.'},
+    ()=>{c.happiness=clamp(c.happiness-rand(5,15),0,100);return 'Unrest grew in '+c.name+'.'}
+   ];
+   const text=events[rand(0,events.length-1)]();
+   if(c.own||Math.random()<.35)log(text);
+  }
+  if(c.people===0&&!c.own){
+   c.people=0;
+  }
+ }
+ const player=own();
+ if(player.people<=0||player.happiness===0&&player.army===0){
+  state.gameOver=true;
+  log('Your civilization collapsed. A new timeline can begin in the Stone Age.');
+  if(!silent)collapseScreen();
+ }
+ for(const c of state.civs){
+  if(!c.own&&c.people>0&&Math.random()<.006){
+   const rival=state.civs.find(x=>x.id!==c.id&&x.people>0);
+   if(rival){const loss=Math.min(rival.people,rand(10,50));rival.people-=loss;c.people+=Math.floor(loss*.3);if(Math.random()<.2)log(c.name+' and '+rival.name+' clashed over territory.')}
+  }
+ }
+ if(!silent&&state.year%10===0)log('A decade has passed. '+era()+' continues to shape civilization.');
+}
+
+function simulateMany(years,silent=false){
+ for(let i=0;i<years;i++){
+  if(state.gameOver)break;
+  simulateYear(true);
+ }
+ if(years>0)log('The world continued for '+fmt(years)+' years while you were away. Major events may have occurred.');
+ if(!silent)toast('Simulation caught up by '+fmt(years)+' years.');
+}
+
+function tick(){
+ if(!started||state.gameOver)return;
+ const now=Date.now();
+ if(now-lastTick>=SECONDS_PER_YEAR*1000){
+  const years=Math.floor((now-lastTick)/(SECONDS_PER_YEAR*1000));
+  lastTick+=years*SECONDS_PER_YEAR*1000;
+  simulateMany(years);
+  update();drawMarkers();save();
+ }
+}
+
+function collapseScreen(){
+ openPanel('Your empire has fallen','Timeline ended',
+ '<p>Your civilization has collapsed. Its history will be preserved.</p><div class="row"><button class="mini gold" onclick="restartTimeline()">Begin a new Stone Age timeline</button></div>');
+}
+
+function restartTimeline(){
+ state.archives.push({year:state.year,history:state.history.slice(),civs:state.civs.map(c=>({name:c.name,people:c.people,own:c.own}))});
+ state.year=1;state.gameOver=false;
+ state.civs=seeds.map(newCiv);
+ state.history=[{year:1,text:'A new alternate-history timeline begins. Every civilization starts with 1,000 people.'}];
+ placing=null;lastTick=Date.now();save();update();drawMarkers();closePanel();
+ if(map)map.setView([27,42],3);
+ toast('A new Stone Age timeline has begun.');
+}
+
+function updateOffline(){
+ const now=Date.now();
+ const elapsed=Math.max(0,Math.floor((now-(state.lastSimAt||now))/1000));
+ const years=Math.floor(elapsed/SECONDS_PER_YEAR);
+ if(years>0&&!state.gameOver)simulateMany(Math.min(years,5000),true);
+ state.lastSimAt=now;
+}
+
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='hidden'){save()}
+ else if(started){
+  updateOffline();lastTick=Date.now();update();drawMarkers();save();
+ }
 });
-renderDetails();
-renderBuilds();
-save();
-}
-function renderMap(){
-const map=document.getElementById("map");
-map.querySelectorAll(".place").forEach(x=>x.remove());
-places.forEach(p=>{
-if(level===3&&!p.own)return;
-const b=document.createElement("button");
-b.className="place"+(selectedPlace===p?" selected":"");
-b.style.left=p.x+"%";b.style.top=p.y+"%";
-b.innerHTML="<b>"+p.icon+"</b>"+p.name;
-b.onclick=()=>selectPlace(p);
-b.ondblclick=()=>{selectPlace(p);if(level===2&&p.own)enterSettlement()};
-map.appendChild(b);
-});
-document.getElementById("land").style.transform="scale("+(level===1?1:level===2?1.5:2)+" )";
-document.getElementById("level").textContent=
-"Level "+level+" · "+(level===1?"World map":level===2?"Regional map":"Your settlement");
-document.getElementById("maplabel").textContent=
-level===1?"THE KNOWN WORLD":level===2?"REGION · "+selectedPlace.name.toUpperCase():"YOUR EMPIRE";
-}
-function selectPlace(p){
-selectedPlace=p;game.selected=p.name;
-renderMap();renderDetails();save();
-if(level===2)log("You inspect "+p.name+".");
-}
-function renderDetails(){
-document.getElementById("placeTitle").textContent=selectedPlace.name;
-const own=selectedPlace.own;
-let text="<b>"+selectedPlace.kind+"</b><br>";
-if(own){
-text+="Population: "+fmt(game.pop)+"<br>Workers available: "+fmt(game.workers)+"<br>Buildings: "+game.buildings.length+"<br>Era: "+era();
-}else{
-text+="Ownership: Independent<br>Location intelligence: Limited<br>Known resources depend on exploration.";
-}
-document.getElementById("details").innerHTML=text;
-const a=document.getElementById("placeActions");
-a.innerHTML="";
-if(level===2&&own){
-a.innerHTML='<button onclick="enterSettlement()">Enter settlement · Level 3</button>';
-}else if(level===2&&!own){
-a.innerHTML='<button onclick="explore()">Explore area</button><button onclick="inspect()">Gather intelligence</button>';
-}else if(level===1){
-a.innerHTML='<button onclick="zoomIn()">Zoom into region</button>';
-}
-}
-function zoomIn(){
-if(level<2)level=2;
-else if(selectedPlace.own)level=3;
-else log("You cannot enter another civilization's detailed management view.");
-renderMap();renderDetails();
-}
-function zoomOut(){
-if(level===3)level=2;
-else level=1;
-renderMap();renderDetails();
-}
-function worldView(){level=1;renderMap();renderDetails()}
-function tryLevel3(){
-if(selectedPlace.own)enterSettlement();
-else alert("Level 3 management is available only inside your own empire.");
-}
-function enterSettlement(){
-if(!selectedPlace.own){alert("You can only manage your own settlements.");return}
-level=3;renderMap();renderDetails();
-document.getElementById("maplabel").textContent="SETTLEMENT MANAGEMENT";
-log("You return to manage your settlement.");
-}
-function explore(){
-if(game.food<10){alert("You need 10 food for an expedition.");return}
-game.food-=10;
-if(Math.random()<.6){
-const found=Math.random()<.5?"wood":"stone";
-game[found]+=30;
-log("Your expedition finds "+(found==="wood"?"useful timber":"a deposit of stone")+" near "+selectedPlace.name+".");
-}else log("Your expedition discovers little. The region remains partly unknown.");
-update();
-}
-function inspect(){
-log("Scouts observe "+selectedPlace.name+" and return with limited information.");
-alert("The area has been inspected. More accurate information requires further exploration.");
-}
-const buildings=[
-{name:"Farm",icon:"🌾",wood:30,stone:0,desc:"Produces food over time."},
-{name:"Mine",icon:"⛏️",wood:35,stone:15,desc:"May reveal valuable deposits."},
-{name:"School",icon:"📚",wood:45,stone:20,desc:"Trains people and develops knowledge."},
-{name:"Workshop",icon:"🔨",wood:35,stone:10,desc:"Improves production and tools."},
-{name:"Outpost",icon:"🏕️",wood:40,stone:10,desc:"Extends your local presence."},
-{name:"Hospital",icon:"⚕️",wood:55,stone:30,desc:"Helps your people respond to disease."}
-];
-function renderBuilds(){
-const box=document.getElementById("buildButtons");
-box.innerHTML="";
-buildings.forEach(b=>{
-const btn=document.createElement("button");
-btn.textContent=b.icon+" "+b.name+" · "+b.wood+" wood"+(b.stone?", "+b.stone+" stone":"");
-btn.disabled=level!==3||game.wood<b.wood||game.stone<b.stone;
-btn.onclick=()=>build(b);
-box.appendChild(btn);
-});
-}
-function build(b){
-if(level!==3){alert("Zoom into your own settlement at Level 3 before building.");return}
-if(game.wood<b.wood||game.stone<b.stone){alert("You don't have enough resources.");return}
-game.wood-=b.wood;game.stone-=b.stone;
-game.buildings.push(b.name);
-built.push({name:b.name,icon:b.icon});
-log("You begin constructing a "+b.name+".");
-if(b.name==="Farm")log("The farm needs workers before it can produce food.");
-if(b.name==="Mine"){
-if(Math.random()<.15){
-log("Unexpected discovery! The mine reveals an unusually valuable deposit.");
-game.knowledge+=10;
-}else log("The mine opens. Its long-term yield is still uncertain.");
-}
-if(b.name==="School")log("Your people begin developing a place for teaching future generations.");
-renderScene();update();
-}
-function renderScene(){
-let scene=document.getElementById("map");
-if(level!==3)return;
-let old=document.getElementById("sceneBuildings");
-if(old)old.remove();
-let holder=document.createElement("div");
-holder.id="sceneBuildings";
-holder.style.cssText="position:absolute;inset:0";
-built.forEach((b,i)=>{
-const el=document.createElement("button");
-el.className="place";
-el.style.left=(20+(i%4)*20)+"%";
-el.style.top=(24+Math.floor(i/4)*24)+"%";
-el.innerHTML="<b>"+b.icon+"</b>"+b.name;
-el.onclick=()=>alert(b.name+"\nThis building is part of your settlement.");
-holder.appendChild(el);
-});
-scene.appendChild(holder);
-}
-function advance(){
-game.year+=1;
-game.food=Math.max(0,game.food-Math.ceil(game.pop/100));
-if(game.food===0){
-game.pop=Math.max(0,game.pop-5);
-log("Food shortages reduce the population.");
-}else if(game.food>100){
-game.pop+=Math.floor(game.pop*.005);
-game.food+=Math.floor(game.buildings.filter(x=>x==="Farm").length*15);
-}
-if(game.buildings.includes("School"))game.knowledge+=1;
-if(game.buildings.includes("Workshop"))game.wood+=2;
-if(game.buildings.includes("Mine"))game.stone+=2;
-if(game.pop===0){
-log("Your settlement has collapsed. Your people have been lost.");
-if(confirm("Your civilization has collapsed. Start a new Stone Age timeline?")){
-game={...defaults,year:-10000,lastTime:Date.now()};
-places[0].own=true;selectedPlace=places[0];level=1;built=[];logs=[];
-log("A new timeline begins with 500 people.");
-}
-}
-log("A year passes. Your civilization continues to change.");
-update();renderMap();
-}
-function research(){
-if(game.food<20){alert("You need 20 food to study new techniques.");return}
-game.food-=20;game.knowledge+=5;
-log("Your people experiment with tools and share new knowledge.");
-update();
-}
-function gather(){
-if(game.pop<20){alert("Your population is too small for this expedition.");return}
-game.food+=20;game.wood+=15;game.workers=Math.max(0,game.workers-5);
-log("Workers gather food and timber. Five workers are occupied for now.");
-update();
-}
-function resetGame(){
-if(!confirm("Reset your current timeline? This cannot be undone."))return;
-game={...defaults,lastTime:Date.now()};built=[];logs=[];
-places[0].own=true;selectedPlace=places[0];level=1;
-log("A new Stone Age timeline begins.");
-update();renderMap();
-}
-renderMap();
-log("Your people establish their first settlement in the Stone Age.");
-update();
+window.addEventListener('beforeunload',save);
+window.addEventListener('pagehide',save);
+
+load();
+renderPage();
+
+window.flip=flip;
+window.startGame=startGame;
+window.showTutorial=showTutorial;
+window.setZoom=setZoom;
+window.closePanel=closePanel;
+window.buildMenu=buildMenu;
+window.chooseBuild=chooseBuild;
+window.researchMenu=researchMenu;
+window.research=research;
+window.diplomacyMenu=diplomacyMenu;
+window.tradeWith=tradeWith;
+window.allianceWith=allianceWith;
+window.inspect=inspect;
+window.inspectMilitary=inspectMilitary;
+window.warMenu=warMenu;
+window.warWith=warWith;
+window.launchWar=launchWar;
+window.historyMenu=historyMenu;
+window.worldMenu=worldMenu;
+window.restartTimeline=restartTimeline;
+window.exportSave=exportSave;
+
 </script>
 </body>
 </html>
